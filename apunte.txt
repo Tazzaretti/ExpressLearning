@@ -1,0 +1,600 @@
+res.send() enviar texto?
+res.sendFile() enviar archivos
+res.json({"name":"tomi"}) enviar json
+
+ver json formatter  (para intercambiar entre distintos sistemas)
+
+al enviar solicitudes desde el cliente debo hacer
+uso de estos metodos de express para que entienda,
+si le estoy enviando una solicitud de tipo texto:
+app.use(express.text())
+asi podra interpretar el cuerpo de la solicitud si es
+de tipo texto
+
+si quiero realizar una solicitud en formato json:
+app.use(express.json())
+
+de lo contrario, al no utilizarlo express no podra entender
+el cuerpo de la solicitud.
+se deben colocar al principio ya que al llegar una solicitud
+primero se enviara a estos metodos y luego a la ruta solicitada
+
+///////////////////////////////////////////PARAMS//////////////////////////////////////////////
+
+para extraer valor de url
+uso params
+app.get('hello/:user', (req, res) => {
+    console.log(req.params.user)
+    res.send(`Hello ${req.params.user}`) //uso comillas invertidas para formatear
+})
+
+todos los parametros que obtenemos de la url son de tipo string
+lo bueno de esto es que se como puedo operar con string
+
+
+puedo obtener mas de un parametros
+app.get('/add/:x/:y', (req, res) => {
+    console.log(req.params.x)
+    console.log(req.params.y)
+    const result = parseInt(req.params.x) + parseInt(req.params.y) //necesito parseint, recordemos que son string y debo convertirlos
+    res.send(`Result: ${result} `) //me mostrara el resultado de la suma
+})
+
+otra forma de obtenerlos es
+const {x, y} = req.params //destructurarlos
+
+
+//los params pueden estar en cualquier lugar
+//aqui validamos el valor de un param para evaluar si enviamos o no una imagen
+app.get('/users/:username/photo', (req, res) => {
+    if(req.params.username === 'nombre') {
+        return res.sendFile('./javascript.png', {
+            root: __dirname
+        })
+    }
+
+    res.send('el usuario no tiene acceso)
+})
+
+//tambien podemos enviar mas de un param en distintos lugares de la ruta
+app.get('/name/:nombre/age/:age', (req, res) => {
+    res.send(`El usuario ${req.params.nombre} tiene ${req.params.age} anios`)
+})
+
+////////////////////////////////////////////////QUERYS/////////////////////////////////////////
+
+//Son valores que se pueden agregar a la ruta para distintos propositos
+//Se agregan al final de la ruta despues de un ?
+//se pasan con una variable por ejemplo x=talcosa y luego desde el backend
+//las obtenemos con query.x por ejemplo, lo que nos dara su valor
+//que reccordemos en la ruta siempre es un string
+
+app.get('/search', (req, res) => {
+    console.log(req.query)
+    if (req.query.q == 'javascript books') {
+        res.send('lista de libros de javascript')
+    }
+    else {
+        res.send('pagina normal')
+    }
+})
+
+//y en la ruta
+
+http://localhost:3000/search?q=javascript%20books
+//mostrara
+//'lista de libros de javascript'
+
+//pero si la ruta fuera por ejemplo:
+
+http://localhost:3000/search?q=otracosa
+//nos mostraria 
+//'pagina normal'
+
+//////////////////////////////////////////////ALL METHOD/////////////////////////////////////////////
+
+
+//es un metodo que hace que  la ruta funcione con cualquier metodo http
+// get, post, put, patch, etc
+//cualquiera sea el metodo de la consulta devolvera algo
+
+app.all('/info', (req, res) => {
+    res.send('server info')
+})
+
+///////////////////////////////////////////MIDDLEWARE//////////////////////////////////////////////
+
+
+//Al realizar una solicitud al servidor antes de pasar por las rutas deseadas
+//se puede pasar por una funcion que se llamara middleware, la cual hara algo 
+//y luego seguira el flujo por las rutas a las que apuntan las solicitudes
+// En casos indicados el middleware puede terminar la peticion en el mismo
+
+// Vemosos que tenemos un nuevo parametro llamado next
+// Se utiliza .use que es una funcion de express para que pase por alli antes
+// de continuar con la ejecucion
+
+app.use((req, res, next)=>{
+    console.log(`Route: ${req.url} Method: ${re.method}`)
+
+    next() //next se utiliza para decir que el trabajo del middleware ha terminado
+            //y debe continuar el flujo de ejecucion
+})
+
+// y una vez finalizada la ejecucion del middleware se continua por las rutas
+// que esten debajo de app.use
+
+app.get('/profile', (req, res) => {
+    res.send('profile page)
+})
+
+
+// En el caso de qque el middleware podria terminar la solicitud tenemos por ejemplo
+// una autenticacion, qque si los datos son incorrectos dara una respuesta inmediata al
+// navegador diciendole que no tiene permisos, sin pasar por la solicitud
+
+//logger que teniamos anteriormente
+app.use((req, res, next)=>{
+    console.log(`Route: ${req.url} Method: ${re.method}`)
+
+    next()
+})
+
+// Middleware que revisa a traves de una query el valor de login
+// y dependiendo del mismo continuara la ejecucion o no
+app.use((req, res, next)=>{
+    if (req.qquery.login === 'name@email.com) {
+        next()
+    } else{
+        res.send('no autorizado)
+    }
+})
+
+app.get('/profile', (req, res) => {
+    res.send('profile page)
+})
+
+app.listen(3000);
+console.log("server on port 3000");
+
+// Es importante el orden en que pongamos los middlewares ya que se ejecutaran
+// en ese orden.
+
+// otro ejemplo, esto tambien es un middleware
+app.use(express.json())
+
+
+
+////////////////////////////MIDDLEWARE DE TERCEROS///////////////////////////////////////////////////////
+
+// Middleware de terceros: Morgan
+// Morgan funciona como el middleware que creamos con la funcion
+// anterior, este muestra informacion de la solicitud por consola
+// pero es un middleware de terceros que puede ser configurado de
+// distintas formas para cambiar esa salida o mensaje, msotrando los datos que
+// necesitemos. El objetivo es mostrar como se utiliza un middleware de terceros
+// se puede tener una gran cantidad de middlewares en una aplicacion y 
+// cumplen diferentes funciones
+
+npm i Morgan
+
+//se agregara solo  las dependencias en package.json
+
+{
+  "dependencies": {
+    "express": "^4.19.2",
+    "morgan": "^1.10.0"
+  }
+}
+
+//para utilizarlo
+
+const express = require('express');
+const morgan = require('morgan')
+
+const app = express();
+
+app.use(morgan('dev'))
+
+app.get('/profile', (req, res) => {
+    res.send('profile page)
+})
+
+app.listen(3000);
+console.log("server on port 3000");
+
+
+///////////////////////////////////////SETTINGS/////////////////////////////////////
+//sirve para compartir datos en toda la aplicacion
+
+//En este caso guardamos nombre de la app como Express Course
+//No debe ser appName, puede ser cualquier nombre de la variable ni tampoco
+// interfiere en el funcionamiento de la misma, solo seteo una variable appName para
+// utilizarla desde cualquier lugar de la aplicacion 
+
+app.set('appName', 'Express Course')
+
+//ejemplo de uso
+
+app.listen(3000);
+console.log(`Server ${app.get('appName')} on port ${3000}`)
+
+// De esta forma se mostrara el valor de appName que sera 'Express Course'
+
+// Tambien podria, por ejemplo, guardar el valor del puerto
+
+app.set("port", 3000)
+
+// y luego
+
+app.listen(3000);
+console.log(`Server ${app.get('appName')} on port ${app.get('port')}`)
+
+// Tambien puedo cambiar un valor reservado por ejemplo para que las rutas, que
+// por defecto no son case sensitive, lo sean
+
+// En este caso si es importante el nombre ya que es un valor reservado de Express
+
+app.set('case sensitive routing', true)
+
+// Ahora las rutas son case sensitive y distinguen mayusculas y minusculas
+// Esta configuracion no es muy utilizada
+
+
+
+//////////////////////////////////////////EXPRESS STATIC///////////////////////////////////////////////////////
+
+// En express podemos definir un static de la siguiente manera
+
+app.use(express.static('./public'))
+
+//Lo que hacemos aqui es decirle a express que la carpeta public puede ser accedida por cualquiera, o sea es publico
+// por lo tanto todos los archivos que tengo en public pueden ser accedidos, no necesariamente tiene que llamarse public
+// pero suele llamarse de esta forma o en su defecto static
+// si voy al navegador y en la ruta escribo
+
+http://localhost:3000/index.html  //o index.css o index.js o cualquier otro archivo que  quiera tener dentro de public
+
+// Podre acceder a estos archivos.
+// Pero que pasa si tenemos rutas que se llaman igual que un archivo?
+// Por ejemplo si en public tengo un archivo note.txt y tengo la siguiente ruta
+
+app.get('/note.txt', (req, res) => {
+    res.send(('este no es un archivo'))
+})
+
+//Esto me mostrara el archivo note.txt que tengo dentro de public y no el texto de la ruta SI Y SOLO SI
+// TENGO EL app.use(express.static('./public')) por encima de app.get('/note.txt'... ya que primero encontrara
+// el middleware, entonces debo ubicar el app.use de static por debajo.
+// En el caso de que necesite acceder a ambas puedo hacer lo siguiente:
+
+app.use('/public', express.static('./public'));
+
+//entonces ahora debere acceder a la ruta anteponiendo /public
+
+http://localhost:3000/public/index.html 
+
+// Por lo general vamos a querer definir static al final asi pasa primero por todas las rutas antes
+// de mostrarme el public
+
+// Podriamos tener varias carpetas estaticas, no solo una, en ese caso la definimos como la anterior
+
+app.use('/public', express.static('./public'));
+app.use('/uploads', express.static('./uploads'));
+
+
+// Si yo coloco todas las carpetas y el index.js dentro de un src, al ejecutar 'node src/index.js'
+// e intentar acceder a alguna de las rutas ya no las encontrara porque express cree que todos
+// los archivos estan dentro de la misma carpeta, entonces lo que debemos hacer es lo siguiente
+
+// Al principio del index.js importamos el modulo path
+
+const path = require('path')
+
+// Y luego al definir los statics, ya que ahora podremos utilizar __dirname
+
+// Entonces concatenamos la direccion de los archivos con la ruta especificada
+app.use('/public', express.static(path.join(__dirname, 'public')))
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')))
+
+// Y ahora si lo podra encontrar
+
+
+
+////////////////////////////////////EXPRESS ROUTER////////////////////////////////////
+
+// Puedo crear una carpeta nueva que se llame, por ejemplo, 'routes', y dentro de ella
+// crear archivos que contendran las rutas que estuvimos creando, por ejemplo dentro de 
+// routes ppuedo crear users.js y poner alli las rutas relacionadas al usuario
+
+function UserRoutes(app){
+    app.get('/UserName', (req, res) => {
+        res.send('UserName route');
+    });
+
+    app.get('/profile', (req, res) => {
+        console.log(req.body);
+        res.send('profile page');
+    });
+}
+
+module.exports = UserRoutes;
+
+// y luego desde index.js
+// Lo importamos
+
+const UserRoutes = require('./routes/users')
+
+// y lo utilizamos
+
+UserRoutes(app)
+
+
+// PERO hay una forma mejor de hacerlo con express router
+// Utilizamos express Router y se lo asignamos a router en users.js
+// Luego lo exportamos
+
+const { Router } = require('express');
+
+router = Router();
+
+router.all('/about', (req, res) =>{
+  res.send('about page');
+});
+
+router.get("/dashboard", (req, res) => {
+  res.sendFile('Dashboard page');
+});
+
+module.exports = router;
+
+// y Luego en index.js lo importamos de la misma manera
+
+const UserRoutes = require('./routes/users')
+
+// y luego lo utilizamos como un middleware
+
+app.use(UserRoutes)
+
+
+
+//////////////////////////////TEMPLATE ENGINE////////////////////////////////////////
+
+// pARA CREAR MULTIPLES PAGINAS en express Y QUE COMPARTAN UNA MISMA INTERFAZ O DATOS
+
+// utilizamos el modulo ejs
+
+npm i ejs
+
+// luego en index.js
+
+require('ejs')
+
+// Creamos la carpeta de las vistas 'views' y dentro el archivo 'index.ejs' y 
+// creamos un html5 dentro del mismo
+
+// Al instalar ejs, express gana un tipo de funcion render
+// En index.js configuramos en settings
+
+//settings
+app.set('case sensitive routing', true);
+app.set('appName', 'Express Course')
+app.set('port', 3000)
+app.set('view engine', 'ejs') // Aqui le decimos que engine (motor de plantillas) usamos (ejs)
+//  esto le dice las views       estan aca, o sea las va a buscar a la carpeta views
+app.set('views', path.join(__dirname, 'views')) //Aqui le decimos donde estan las views
+
+
+// Entonces luego para utilizarlas por ejemplo
+// Aqui lo utilizamos en la ruta /about de home.js
+
+express = require('express');
+
+router = express.Router()
+
+router.all('/about', (req, res) =>{
+    const title = 'titulo' // Dato que le enviaremos al html
+    res.render('index', {title}) // Al usar render sabe que tiene que ir a buscar el archivo index.ejs a la carpeta views
+                      // como se definio en index.js y le enviara el dato title
+})
+
+router.get("/dashboard", (req, res) => {
+  res.sendFile('Dashboard page');
+});
+
+module.exports = router;
+
+// Luego en index.ejs
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pagina con EJS</title>
+</head>
+<body>
+    <h1>
+        <%= title %>  // Aqui le decimos que tiene que mostrar la variable title que le enviamos
+    </h1>             // Para que reconozca la variable debe usarse esa notacion <%= variable %>
+</body>               // El simbolo = dentro de la sintaxis, <%= %> sirve para recibir un valor
+</html>
+
+// Con esto realizado al ir a la ruta especificada podremos ver que nos muestra la variable que le hemos pasado
+
+
+
+// Tambien podemos hacer otro uso de ejs, el uso de partials
+// Los partials son fragmentos de codigo que podemos incluir en otro codigo
+
+//Por ejemplo, podemos separar el header en un header.ejs y el footer en un footer.ejs
+
+
+// header
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pagina con EJS</title>
+</head>
+<body>
+
+
+// footer
+</body>
+</html>
+
+
+// Para luego incluirlo en una de los archivos .ejs que vamos a renderizar en una ruta
+// Por ejemplo en users.js
+
+express = require('express');
+
+router = express.Router()
+
+router.get('/users', (req, res) => {
+    console.log(req.body);
+    res.render('users'); //aqui le decimos que renderice users.ejs
+});
+
+module.exports = router;
+
+// Y luego en users.ejs incluimos ambos header y footer
+
+<%- include('partials/header'); %> //incluyo el partial de header 
+    <h1>Users</h1>
+<%- include('partials/footer'); %> //incluyo el partial de footer
+
+// Lo que seria igual que escribir en users.ejs
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pagina con EJS</title>
+</head>
+<body>
+    <h1>Users</h1>
+</body>
+</html>
+
+
+// Entonces esto es lo mismo que crear un html5 completo para cada .ejs que tenemos
+// Esta no es la unica aplicacion sino que podemos incluir cualquier fragmento de codigo
+// que deseemos con esta funcionalidad, incluir estilos, etc.
+
+
+// ejs tambien nos permite tener condicionales, bucles y otras caracteristicas de lenguaje
+// de programacion dentro de html
+
+// Por ejemplo, si en home modificamos la siguiente ruta
+
+router.get('/', (req, res) =>{
+  let isActive = true;
+  res.render('index', {
+    title: 'index page',
+    isActive              // Agregamos la variable isActive a los valores que enviamos
+  })
+})
+
+
+// Y luego en index.ejs podemos crear un condicional para mostrar distintos mensajes
+// en base al valor de la variable isActive
+
+// index.ejs
+<%- include('partials/header'); %> //incluyo el partial de header 
+    <h1>
+        <%= title %>
+    </h1>
+
+    <% if (isActive) { %>   // Escribimos el codigo en lenguaje javascript dentro de <% %> 
+        <p>El servidor esta activo</p>
+    <%} else { %>           // De esta forma podemos agregar un condicional dentro del .ejs
+        <p>El servidor esta inactivo</p>
+    <% } %>
+<%- include('partials/footer'); %> //incluyo el partial de footer
+
+
+// Tambien podemos utilizar ciclos for
+//Creamos una lista de users
+router.get('/', (req, res) =>{
+
+  let isActive = true;
+
+  const users = [
+    {
+      id:1,
+      name: "ryan",
+      lastname: "perez"
+    },
+    {
+      id:2,
+      name: "joe",
+      lastname: "mc millan"
+    }
+  ]
+  
+  res.render('index', {
+    title: 'index page',
+    isActive,
+    users
+  })
+})
+
+
+// le pasamos una lista de personas por su name y lastname y lo iteramos
+<%- include('partials/header'); %> //incluyo el partial de header 
+    <h1>
+        <%= title %>
+    </h1>
+
+    <% if (isActive) { %>
+        <p>El servidor esta activo</p>
+    <%} else { %>
+        <p>El servidor esta inactivo</p>
+    <% } %>
+
+    <ul>        //Los mostramos en una lista
+        <% for(let i = 0; i < users.length; i++) {%>
+            <li><%= users[i].name %> <%= users[i].lastname %></li> 
+        <% } %>
+    </ul>
+<%- include('partials/footer'); %> //incluyo el partial de footer
+
+
+////////////////////////////////////CONSULTA AXIOS///////////////////////////////////
+
+// vamos a crear un metodo get en una ruta llamada posts trayendo datos desde 
+// json place holder (datos de practica) para hacer una consulta axios asincrona
+
+// creamos el metodo en home.js
+
+router.get("/posts", async (req, res) =>{
+  const response = await axios.get(
+    'https://jsonplaceholder.typicode.com/posts' //obtenemos los datos de la ruta de json placeholder
+  );                                             // con el metodo get de axios y los guardamos en response
+
+  res.render("posts", {
+    posts: response.data,    // Le pasamos todos los datos a posts.ejs
+  });                        // Segun la respuesta de json placeholder los datos se almacenan dentro
+});                          // de data, por eso los extraemos de response.data
+
+
+// creamos un nuevo archivo posts.ejs donde mostraremos los datos
+
+<%- include('partials/header'); %>
+
+<h1> posts</h1>
+
+<% for(let i = 0; i < posts.length; i++){ %>
+    <article>
+        <h1><%= posts[i].title %></h1>   // Mostramos los datos que nos interesan
+        <p><%= posts[i].body %></p>
+    </article>
+<% } %>
+
+<%- include('partials/footer'); %>
+
+// y asi utilizando la iteracion con ejs podemos mostrarlos
